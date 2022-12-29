@@ -2,32 +2,34 @@
 using BepInEx;
 using HarmonyLib;
 using UnityEngine;
-using System.Reflection;
 using PotionCraft.QuestSystem;
 using PotionCraft.ManagersSystem;
 using PotionCraft.ScriptableObjects;
 using PotionCraft.LocalizationSystem;
+using PotionCraft.ObjectBased.Mortar;
 using PotionCraft.ScriptableObjects.Salts;
 using PotionCraft.Npc.MonoBehaviourScripts;
 using PotionCraft.ScriptableObjects.Potion;
+using PotionCraft.DebugObjects.DebugWindows;
+using PotionCraft.ObjectBased.InteractiveItem;
 using PotionCraft.ScriptableObjects.Ingredient;
 using PotionCraft.ObjectBased.UIElements.Tooltip;
 using PotionCraft.ObjectBased.UIElements.Dialogue;
 using PotionCraft.ScriptableObjects.AlchemyMachineProducts;
+using PotionCraft.ObjectBased.RecipeMap.RecipeMapItem.IndicatorMapItem;
 using PotionCraft.ObjectBased.RecipeMap.RecipeMapItem.SolventDirectionHint;
 
 namespace xiaoye97
 {
-    [BepInPlugin("me.xiaoye97.plugin.PotionCraft.MoreInformation", "MoreInformation", "1.0.0")]
+    [BepInPlugin("me.xiaoye97.plugin.PotionCraft.MoreInformation", "MoreInformation", "1.1.0")]
     public class MoreInformation : BaseUnityPlugin
     {
         public static string goldIcon = "<sprite=\"CommonAtlas\" name=\"Gold Icon\">";
-        public static Sprite solventDirectionLine;
 
         private void Start()
         {
             LocalizationManager.OnInitialize.AddListener(SetModLocalization);
-            solventDirectionLine = LoadSprite("Solvent Direction Line.png");
+            solventDirectionLine = Helper.LoadSprite("Solvent Direction Line.png");
             Harmony.CreateAndPatchAll(typeof(MoreInformation));
         }
 
@@ -60,24 +62,7 @@ namespace xiaoye97
 
         #region 药剂方向提示线
 
-        public static Texture2D LoadResTexture2D(string name)
-        {
-            var s = Assembly.GetExecutingAssembly().GetManifestResourceStream("PotionCraft_MoreInformation." + name);
-            int length = (int)s.Length;
-            byte[] bs = new byte[length];
-            s.Read(bs, 0, length);
-            s.Close();
-            Texture2D tex = new Texture2D(2, 2);
-            tex.LoadImage(bs);
-            return tex;
-        }
-
-        public static Sprite LoadSprite(string name)
-        {
-            var tex = LoadResTexture2D(name);
-            Sprite sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0));
-            return sprite;
-        }
+        public static Sprite solventDirectionLine;
 
         /// <summary>
         /// 药剂方向提示线
@@ -185,9 +170,65 @@ namespace xiaoye97
             {
                 str += new Key("#effect_" + effect.name, null, false).GetText() + " ";
             }
-            __instance.dialogueText.text.text += $"\n<color=#a39278>{str}</color>";
+            __instance.dialogueText.text.text += $"<color=#a39278>{str}</color>";
         }
 
         #endregion 目标药剂效果提醒
+
+        #region 药瓶瓶身半透明
+
+        [HarmonyPostfix, HarmonyPatch(typeof(InteractiveItem), "Hover")]
+        public static void InteractiveItem_UpdateHover_Patch(InteractiveItem __instance, bool hover)
+        {
+            if (__instance is IndicatorMapItem)
+            {
+                var item = __instance as IndicatorMapItem;
+                if (hover)
+                {
+                    item.backgroundSpriteRenderer.enabled = false;
+                    item.liquidColorChangeAnimator.upperContainer.SetAlpha(0.1f);
+                    item.liquidColorChangeAnimator.lowerContainer.SetAlpha(0.1f);
+                }
+                else
+                {
+                    item.backgroundSpriteRenderer.enabled = true;
+                    item.liquidColorChangeAnimator.upperContainer.SetAlpha(1);
+                    item.liquidColorChangeAnimator.lowerContainer.SetAlpha(1);
+                }
+            }
+        }
+
+        #endregion 药瓶瓶身半透明
+
+        #region 研磨进度
+
+        public static DebugWindow GrindStatusDebugWindow;
+
+        private static void InitGrindStatusDebugWindow()
+        {
+            if (GrindStatusDebugWindow == null)
+            {
+                GrindStatusDebugWindow = Helper.CreateClearDebugWindow("研磨进度", new Vector2(4, -5));
+                var room = Managers.Room.instantiatedRooms[(int)PotionCraft.ManagersSystem.Room.RoomManager.RoomIndex.Laboratory];
+                GrindStatusDebugWindow.transform.SetParent(room.transform, false);
+            }
+        }
+
+        [HarmonyPostfix, HarmonyPatch(typeof(Mortar), "Update")]
+        public static void Mortar_Update_Patch(Mortar __instance)
+        {
+            InitGrindStatusDebugWindow();
+            if (__instance.containedStack != null)
+            {
+                float status = Mathf.Clamp01(__instance.containedStack.overallGrindStatus);
+                GrindStatusDebugWindow.ShowText($"{(status * 100).ToString("f2")}%");
+            }
+            else
+            {
+                GrindStatusDebugWindow.ShowText("");
+            }
+        }
+
+        #endregion 研磨进度
     }
 }
