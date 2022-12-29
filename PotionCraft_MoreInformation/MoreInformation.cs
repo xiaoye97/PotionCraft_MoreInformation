@@ -21,7 +21,7 @@ using PotionCraft.ObjectBased.RecipeMap.RecipeMapItem.SolventDirectionHint;
 
 namespace xiaoye97
 {
-    [BepInPlugin("me.xiaoye97.plugin.PotionCraft.MoreInformation", "MoreInformation", "1.1.0")]
+    [BepInPlugin("me.xiaoye97.plugin.PotionCraft.MoreInformation", "MoreInformation", "1.2.0")]
     public class MoreInformation : BaseUnityPlugin
     {
         public static string goldIcon = "<sprite=\"CommonAtlas\" name=\"Gold Icon\">";
@@ -79,7 +79,7 @@ namespace xiaoye97
 
         public static string GetPriceString(InventoryItem item, int count = 1)
         {
-            return goldIcon + " " + item.GetPrice() * count;
+            return goldIcon + " " + (item.GetPrice() * count).ToString("0.##");
         }
 
         public static void AddNormalPriceTooltip(TooltipContent tooltip, InventoryItem item, bool notHasTip = false)
@@ -123,7 +123,7 @@ namespace xiaoye97
                     cost += ((InventoryItem)c.componentObject).GetPrice() * c.amount;
                 }
             }
-            __result.description2 += $"\n{LocalizationManager.GetText("#mod_moreinformation_cost")}\t {goldIcon} {cost}";
+            __result.description2 += $"\n{LocalizationManager.GetText("#mod_moreinformation_cost")}\t {goldIcon} {cost.ToString("0.##")}";
         }
 
         /// <summary>
@@ -212,6 +212,7 @@ namespace xiaoye97
                 var room = Managers.Room.instantiatedRooms[(int)PotionCraft.ManagersSystem.Room.RoomManager.RoomIndex.Laboratory];
                 GrindStatusDebugWindow.transform.SetParent(room.transform, false);
             }
+            GrindStatusDebugWindow.transform.localPosition = new Vector3(4, -5, 0);
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(Mortar), "Update")]
