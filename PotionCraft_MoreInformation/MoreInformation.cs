@@ -55,7 +55,7 @@ namespace xiaoye97
             RegisterLoc("#mod_moreinformation_value", "Value", "价值");
             RegisterLoc("#mod_moreinformation_cost", "Cost", "成本");
             RegisterLoc("#mod_moreinformation_has", "Has", "已拥有");
-            RegisterLoc("#mod_moreinformation_nothas", "<color=red>Not has, purchase recommended</color>", "<color=red>未拥有，建议购入</color>");
+            RegisterLoc("#mod_moreinformation_nothas", "<color=red>Items not owned, recommended</color>", "<color=red>未拥有，建议购入</color>");
         }
 
         #endregion Mod多语言
