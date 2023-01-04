@@ -2,6 +2,7 @@
 using BepInEx;
 using HarmonyLib;
 using UnityEngine;
+using BepInEx.Configuration;
 using PotionCraft.QuestSystem;
 using PotionCraft.ManagersSystem;
 using PotionCraft.ScriptableObjects;
@@ -21,17 +22,33 @@ using PotionCraft.ObjectBased.RecipeMap.RecipeMapItem.SolventDirectionHint;
 
 namespace xiaoye97
 {
-    [BepInPlugin("me.xiaoye97.plugin.PotionCraft.MoreInformation", "MoreInformation", "1.2.0")]
+    [BepInPlugin("me.xiaoye97.plugin.PotionCraft.MoreInformation", "MoreInformation", "1.3.0")]
     public class MoreInformation : BaseUnityPlugin
     {
         public static string goldIcon = "<sprite=\"CommonAtlas\" name=\"Gold Icon\">";
 
         private void Start()
         {
+            EnableSolventDirectionLine = Config.Bind<bool>("config", "EnableSolventDirectionLine", true);
+            EnablePriceTooltips = Config.Bind<bool>("config", "EnableSolventDiEnablePriceTooltipsrectionLine", true);
+            EnableNPCPotionTips = Config.Bind<bool>("config", "EnableNPCPotionTips", true);
+            EnablePotionTranslucent = Config.Bind<bool>("config", "EnablePotionTranslucent", true);
+            EnableGrindStatus = Config.Bind<bool>("config", "EnableGrindStatus", true);
+
             LocalizationManager.OnInitialize.AddListener(SetModLocalization);
             solventDirectionLine = Helper.LoadSprite("Solvent Direction Line.png");
             Harmony.CreateAndPatchAll(typeof(MoreInformation));
         }
+
+        #region Config
+
+        public static ConfigEntry<bool> EnableSolventDirectionLine;
+        public static ConfigEntry<bool> EnablePriceTooltips;
+        public static ConfigEntry<bool> EnableNPCPotionTips;
+        public static ConfigEntry<bool> EnablePotionTranslucent;
+        public static ConfigEntry<bool> EnableGrindStatus;
+
+        #endregion Config
 
         #region Mod多语言
 
@@ -70,7 +87,10 @@ namespace xiaoye97
         [HarmonyPostfix, HarmonyPatch(typeof(SolventDirectionHint), "Awake")]
         public static void SolventDirectionHint_Awake_Patch(SolventDirectionHint __instance)
         {
-            __instance.spriteRenderer.sprite = solventDirectionLine;
+            if (EnableSolventDirectionLine.Value)
+            {
+                __instance.spriteRenderer.sprite = solventDirectionLine;
+            }
         }
 
         #endregion 药剂方向提示线
@@ -105,7 +125,10 @@ namespace xiaoye97
         [HarmonyPostfix, HarmonyPatch(typeof(Ingredient), "GetTooltipContent")]
         public static void Ingredient_GetTooltipContent_Patch(Ingredient __instance, ref TooltipContent __result)
         {
-            AddNormalPriceTooltip(__result, __instance, true);
+            if (EnablePriceTooltips.Value)
+            {
+                AddNormalPriceTooltip(__result, __instance, true);
+            }
         }
 
         /// <summary>
@@ -114,16 +137,19 @@ namespace xiaoye97
         [HarmonyPostfix, HarmonyPatch(typeof(Potion), "GetTooltipContent")]
         public static void Potion_GetTooltipContent_Patch(Potion __instance, ref TooltipContent __result)
         {
-            AddNormalPriceTooltip(__result, __instance);
-            float cost = 0;
-            foreach (var c in __instance.usedComponents)
+            if (EnablePriceTooltips.Value)
             {
-                if (c.componentType == PotionUsedComponent.ComponentType.InventoryItem)
+                AddNormalPriceTooltip(__result, __instance);
+                float cost = 0;
+                foreach (var c in __instance.usedComponents)
                 {
-                    cost += ((InventoryItem)c.componentObject).GetPrice() * c.amount;
+                    if (c.componentType == PotionUsedComponent.ComponentType.InventoryItem)
+                    {
+                        cost += ((InventoryItem)c.componentObject).GetPrice() * c.amount;
+                    }
                 }
+                __result.description2 += $"\n{LocalizationManager.GetText("#mod_moreinformation_cost")}\t {goldIcon} {cost.ToString("0.##")}";
             }
-            __result.description2 += $"\n{LocalizationManager.GetText("#mod_moreinformation_cost")}\t {goldIcon} {cost.ToString("0.##")}";
         }
 
         /// <summary>
@@ -132,7 +158,10 @@ namespace xiaoye97
         [HarmonyPostfix, HarmonyPatch(typeof(Salt), "GetTooltipContent")]
         public static void Salt_GetTooltipContent_Patch(Salt __instance, ref TooltipContent __result)
         {
-            AddNormalPriceTooltip(__result, __instance);
+            if (EnablePriceTooltips.Value)
+            {
+                AddNormalPriceTooltip(__result, __instance);
+            }
         }
 
         /// <summary>
@@ -141,7 +170,10 @@ namespace xiaoye97
         [HarmonyPostfix, HarmonyPatch(typeof(LegendarySaltPile), "GetTooltipContent")]
         public static void LegendarySaltPile_GetTooltipContent_Patch(LegendarySaltPile __instance, ref TooltipContent __result)
         {
-            AddNormalPriceTooltip(__result, __instance);
+            if (EnablePriceTooltips.Value)
+            {
+                AddNormalPriceTooltip(__result, __instance);
+            }
         }
 
         /// <summary>
@@ -150,7 +182,10 @@ namespace xiaoye97
         [HarmonyPostfix, HarmonyPatch(typeof(LegendarySubstance), "GetTooltipContent")]
         public static void LegendarySubstance_GetTooltipContent_Patch(LegendarySubstance __instance, ref TooltipContent __result)
         {
-            AddNormalPriceTooltip(__result, __instance);
+            if (EnablePriceTooltips.Value)
+            {
+                AddNormalPriceTooltip(__result, __instance);
+            }
         }
 
         #endregion Tooltip
@@ -163,14 +198,17 @@ namespace xiaoye97
         [HarmonyPostfix, HarmonyPatch(typeof(DialogueBox), "UpdatePotionRequestText")]
         public static void DialogueBox_UpdatePotionRequestText_Patch(DialogueBox __instance)
         {
-            NpcMonoBehaviour currentNpcMonoBehaviour = Managers.Npc.CurrentNpcMonoBehaviour;
-            Quest currentQuest = currentNpcMonoBehaviour.currentQuest;
-            string str = "";
-            foreach (var effect in currentQuest.desiredEffects)
+            if (EnableNPCPotionTips.Value)
             {
-                str += new Key("#effect_" + effect.name, null, false).GetText() + " ";
+                NpcMonoBehaviour currentNpcMonoBehaviour = Managers.Npc.CurrentNpcMonoBehaviour;
+                Quest currentQuest = currentNpcMonoBehaviour.currentQuest;
+                string str = "";
+                foreach (var effect in currentQuest.desiredEffects)
+                {
+                    str += new Key("#effect_" + effect.name, null, false).GetText() + " ";
+                }
+                __instance.dialogueText.text.text += $"<color=#a39278>{str}</color>";
             }
-            __instance.dialogueText.text.text += $"<color=#a39278>{str}</color>";
         }
 
         #endregion 目标药剂效果提醒
@@ -180,20 +218,23 @@ namespace xiaoye97
         [HarmonyPostfix, HarmonyPatch(typeof(InteractiveItem), "Hover")]
         public static void InteractiveItem_UpdateHover_Patch(InteractiveItem __instance, bool hover)
         {
-            if (__instance is IndicatorMapItem)
+            if (EnablePotionTranslucent.Value)
             {
-                var item = __instance as IndicatorMapItem;
-                if (hover)
+                if (__instance is IndicatorMapItem)
                 {
-                    item.backgroundSpriteRenderer.enabled = false;
-                    item.liquidColorChangeAnimator.upperContainer.SetAlpha(0.1f);
-                    item.liquidColorChangeAnimator.lowerContainer.SetAlpha(0.1f);
-                }
-                else
-                {
-                    item.backgroundSpriteRenderer.enabled = true;
-                    item.liquidColorChangeAnimator.upperContainer.SetAlpha(1);
-                    item.liquidColorChangeAnimator.lowerContainer.SetAlpha(1);
+                    var item = __instance as IndicatorMapItem;
+                    if (hover)
+                    {
+                        item.backgroundSpriteRenderer.enabled = false;
+                        item.liquidColorChangeAnimator.upperContainer.SetAlpha(0.1f);
+                        item.liquidColorChangeAnimator.lowerContainer.SetAlpha(0.1f);
+                    }
+                    else
+                    {
+                        item.backgroundSpriteRenderer.enabled = true;
+                        item.liquidColorChangeAnimator.upperContainer.SetAlpha(1);
+                        item.liquidColorChangeAnimator.lowerContainer.SetAlpha(1);
+                    }
                 }
             }
         }
@@ -218,15 +259,18 @@ namespace xiaoye97
         [HarmonyPostfix, HarmonyPatch(typeof(Mortar), "Update")]
         public static void Mortar_Update_Patch(Mortar __instance)
         {
-            InitGrindStatusDebugWindow();
-            if (__instance.containedStack != null)
+            if (EnableGrindStatus.Value)
             {
-                float status = Mathf.Clamp01(__instance.containedStack.overallGrindStatus);
-                GrindStatusDebugWindow.ShowText($"{(status * 100).ToString("f2")}%");
-            }
-            else
-            {
-                GrindStatusDebugWindow.ShowText("");
+                InitGrindStatusDebugWindow();
+                if (__instance.containedStack != null)
+                {
+                    float status = Mathf.Clamp01(__instance.containedStack.overallGrindStatus);
+                    GrindStatusDebugWindow.ShowText($"{(status * 100).ToString("f2")}%");
+                }
+                else
+                {
+                    GrindStatusDebugWindow.ShowText("");
+                }
             }
         }
 
