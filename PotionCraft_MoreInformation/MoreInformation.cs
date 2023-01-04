@@ -19,10 +19,11 @@ using PotionCraft.ObjectBased.UIElements.Dialogue;
 using PotionCraft.ScriptableObjects.AlchemyMachineProducts;
 using PotionCraft.ObjectBased.RecipeMap.RecipeMapItem.IndicatorMapItem;
 using PotionCraft.ObjectBased.RecipeMap.RecipeMapItem.SolventDirectionHint;
+using TMPro;
 
 namespace xiaoye97
 {
-    [BepInPlugin("me.xiaoye97.plugin.PotionCraft.MoreInformation", "MoreInformation", "1.3.0")]
+    [BepInPlugin("me.xiaoye97.plugin.PotionCraft.MoreInformation", "MoreInformation", "1.4.0")]
     public class MoreInformation : BaseUnityPlugin
     {
         public static string goldIcon = "<sprite=\"CommonAtlas\" name=\"Gold Icon\">";
@@ -207,7 +208,12 @@ namespace xiaoye97
                 {
                     str += new Key("#effect_" + effect.name, null, false).GetText() + " ";
                 }
-                __instance.dialogueText.text.text += $"<color=#a39278>{str}</color>";
+                str = __instance.dialogueText.text.text + $"<color=#a39278>{str}</color>";
+                __instance.dialogueText.text.text = str;
+                __instance.dialogueText.text.rectTransform.sizeDelta = new Vector2(__instance.dialogueText.text.rectTransform.sizeDelta.x, __instance.dialogueText.text.rectTransform.sizeDelta.y + 0.3f);
+                __instance.dialogueText.text.DeleteAllSubMeshes();
+                __instance.dialogueText.UpdateBackground();
+                __instance.dialogueText.UpdatePosition();
             }
         }
 
