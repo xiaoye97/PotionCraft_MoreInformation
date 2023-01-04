@@ -1,5 +1,6 @@
 ﻿using System;
 using BepInEx;
+using BepInEx.Configuration;
 using HarmonyLib;
 using UnityEngine;
 using PotionCraft.QuestSystem;
@@ -28,18 +29,47 @@ namespace xiaoye97
 
         private void Start()
         {
+            BindConfigs();
             LocalizationManager.OnInitialize.AddListener(SetModLocalization);
             solventDirectionLine = Helper.LoadSprite("Solvent Direction Line.png");
             Harmony.CreateAndPatchAll(typeof(MoreInformation));
         }
+        
+        #region 配置注册
+
+        private static ConfigEntry<bool> _configClearLine;
+        private static ConfigEntry<bool> _configToolTip;
+        private static ConfigEntry<bool> _configDemandPotion;
+        private static ConfigEntry<bool> _configTransparentBottle;
+        private static ConfigEntry<bool> _configGrindProgress;
+
+        private void BindConfigs()
+        {
+            _configClearLine = Config.Bind(
+                "General", "ClearLine", true,
+                "Render a distinct line between potion and origin. \n药水和原点的连线现在变得更加清晰。");
+            _configToolTip = Config.Bind(
+                "General", "ToolTips", true,
+                "Tooltip now shows the item's value, the number you own and the total value, and the cost of the potion. \n物品的提示信息中，现在会显示物品的价值，自己拥有的数量以及总价值，药水的成本。");
+            _configDemandPotion = Config.Bind(
+                "General", "DemandPotion", true,
+                "The customer NPC's dialogue will show the potion he wants. \n顾客NPC的对话中，会显示他想要的属性。");
+            _configTransparentBottle = Config.Bind(
+                "General", "DemandPotion", true,
+                "When you mouse over the potion bottle, the bottle will become translucent and you can see the covered lines. \n当鼠标覆盖到药瓶时，药瓶会变成半透明，可以看到被盖住的线。");
+            _configGrindProgress = Config.Bind(
+                "General", "GrindProgress", true,
+                "Display the grinding progress of ingredients in percentage. \n实时显示药材的研磨进度。");
+        }
+        #endregion
 
         #region Mod多语言
 
         public static void RegisterLoc(string key, string en, string zh)
         {
-            for (int i = 0; i <= (int)LocalizationManager.Locale.cs; i++)
+            for (int i = 0; i <= (int) LocalizationManager.Locale.cs; i++)
             {
-                if ((LocalizationManager.Locale)i == LocalizationManager.Locale.zh)
+                if ((LocalizationManager.Locale) i == LocalizationManager.Locale.zh)
                 {
                     LocalizationManager.localizationData.Add(i, key, zh);
                 }
@@ -55,7 +85,8 @@ namespace xiaoye97
             RegisterLoc("#mod_moreinformation_value", "Value", "价值");
             RegisterLoc("#mod_moreinformation_cost", "Cost", "成本");
             RegisterLoc("#mod_moreinformation_has", "Has", "已拥有");
-            RegisterLoc("#mod_moreinformation_nothas", "<color=red>Items not owned, recommended</color>", "<color=red>未拥有，建议购入</color>");
+            RegisterLoc("#mod_moreinformation_nothas", "<color=red>Items not owned, recommended</color>",
+                "<color=red>未拥有，建议购入</color>");
         }
 
         #endregion Mod多语言
@@ -70,6 +101,7 @@ namespace xiaoye97
         [HarmonyPostfix, HarmonyPatch(typeof(SolventDirectionHint), "Awake")]
         public static void SolventDirectionHint_Awake_Patch(SolventDirectionHint __instance)
         {
+            if (!_configClearLine.Value) return;
             __instance.spriteRenderer.sprite = solventDirectionLine;
         }
 
@@ -84,11 +116,14 @@ namespace xiaoye97
 
         public static void AddNormalPriceTooltip(TooltipContent tooltip, InventoryItem item, bool notHasTip = false)
         {
-            tooltip.description2 += $"{LocalizationManager.GetText("#mod_moreinformation_value")}\t {GetPriceString(item)}";
+            if (!_configToolTip.Value) return;
+            tooltip.description2 +=
+                $"{LocalizationManager.GetText("#mod_moreinformation_value")}\t {GetPriceString(item)}";
             int hasCount = Managers.Player.inventory.GetItemCount(item);
             if (hasCount > 0)
             {
-                tooltip.description2 += $"\n{LocalizationManager.GetText("#mod_moreinformation_has")} {hasCount}\t " + GetPriceString(item, hasCount);
+                tooltip.description2 += $"\n{LocalizationManager.GetText("#mod_moreinformation_has")} {hasCount}\t " +
+                                        GetPriceString(item, hasCount);
             }
             else
             {
@@ -120,10 +155,12 @@ namespace xiaoye97
             {
                 if (c.componentType == PotionUsedComponent.ComponentType.InventoryItem)
                 {
-                    cost += ((InventoryItem)c.componentObject).GetPrice() * c.amount;
+                    cost += ((InventoryItem) c.componentObject).GetPrice() * c.amount;
                 }
             }
-            __result.description2 += $"\n{LocalizationManager.GetText("#mod_moreinformation_cost")}\t {goldIcon} {cost.ToString("0.##")}";
+
+            __result.description2 +=
+                $"\n{LocalizationManager.GetText("#mod_moreinformation_cost")}\t {goldIcon} {cost.ToString("0.##")}";
         }
 
         /// <summary>
@@ -139,7 +176,8 @@ namespace xiaoye97
         /// 传说盐信息
         /// </summary>
         [HarmonyPostfix, HarmonyPatch(typeof(LegendarySaltPile), "GetTooltipContent")]
-        public static void LegendarySaltPile_GetTooltipContent_Patch(LegendarySaltPile __instance, ref TooltipContent __result)
+        public static void LegendarySaltPile_GetTooltipContent_Patch(LegendarySaltPile __instance,
+            ref TooltipContent __result)
         {
             AddNormalPriceTooltip(__result, __instance);
         }
@@ -148,7 +186,8 @@ namespace xiaoye97
         /// 传说物质信息
         /// </summary>
         [HarmonyPostfix, HarmonyPatch(typeof(LegendarySubstance), "GetTooltipContent")]
-        public static void LegendarySubstance_GetTooltipContent_Patch(LegendarySubstance __instance, ref TooltipContent __result)
+        public static void LegendarySubstance_GetTooltipContent_Patch(LegendarySubstance __instance,
+            ref TooltipContent __result)
         {
             AddNormalPriceTooltip(__result, __instance);
         }
@@ -163,6 +202,7 @@ namespace xiaoye97
         [HarmonyPostfix, HarmonyPatch(typeof(DialogueBox), "UpdatePotionRequestText")]
         public static void DialogueBox_UpdatePotionRequestText_Patch(DialogueBox __instance)
         {
+            if (!_configDemandPotion.Value) return;
             NpcMonoBehaviour currentNpcMonoBehaviour = Managers.Npc.CurrentNpcMonoBehaviour;
             Quest currentQuest = currentNpcMonoBehaviour.currentQuest;
             string str = "";
@@ -170,6 +210,7 @@ namespace xiaoye97
             {
                 str += new Key("#effect_" + effect.name, null, false).GetText() + " ";
             }
+
             __instance.dialogueText.text.text += $"<color=#a39278>{str}</color>";
         }
 
@@ -180,6 +221,8 @@ namespace xiaoye97
         [HarmonyPostfix, HarmonyPatch(typeof(InteractiveItem), "Hover")]
         public static void InteractiveItem_UpdateHover_Patch(InteractiveItem __instance, bool hover)
         {
+            if (!_configTransparentBottle.Value) return;
+
             if (__instance is IndicatorMapItem)
             {
                 var item = __instance as IndicatorMapItem;
@@ -209,15 +252,19 @@ namespace xiaoye97
             if (GrindStatusDebugWindow == null)
             {
                 GrindStatusDebugWindow = Helper.CreateClearDebugWindow("研磨进度", new Vector2(4, -5));
-                var room = Managers.Room.instantiatedRooms[(int)PotionCraft.ManagersSystem.Room.RoomManager.RoomIndex.Laboratory];
+                var room = Managers.Room.instantiatedRooms[
+                    (int) PotionCraft.ManagersSystem.Room.RoomManager.RoomIndex.Laboratory];
                 GrindStatusDebugWindow.transform.SetParent(room.transform, false);
             }
+
             GrindStatusDebugWindow.transform.localPosition = new Vector3(4, -5, 0);
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(Mortar), "Update")]
         public static void Mortar_Update_Patch(Mortar __instance)
         {
+            if (!_configGrindProgress.Value) return;
+
             InitGrindStatusDebugWindow();
             if (__instance.containedStack != null)
             {
