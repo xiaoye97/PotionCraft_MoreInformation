@@ -53,9 +53,9 @@ namespace xiaoye97
                 "Tooltip now shows the item's value, the number you own and the total value, and the cost of the potion. \n物品的提示信息中，现在会显示物品的价值，自己拥有的数量以及总价值，药水的成本。");
             _configDemandPotion = Config.Bind(
                 "General", "DemandPotion", true,
-                "The customer NPC's dialogue will show the potion he wants. \n顾客NPC的对话中，会显示他想要的属性。");
+                "The customer NPC's dialogue will show the potion they wants. \n顾客NPC的对话中，会显示他想要的属性。");
             _configTransparentBottle = Config.Bind(
-                "General", "DemandPotion", true,
+                "General", "TransparentBottle", true,
                 "When you mouse over the potion bottle, the bottle will become translucent and you can see the covered lines. \n当鼠标覆盖到药瓶时，药瓶会变成半透明，可以看到被盖住的线。");
             _configGrindProgress = Config.Bind(
                 "General", "GrindProgress", true,
