@@ -23,12 +23,12 @@ using TMPro;
 
 namespace xiaoye97
 {
-    [BepInPlugin("me.xiaoye97.plugin.PotionCraft.MoreInformation", "MoreInformation", "1.4.0")]
+    [BepInPlugin("me.xiaoye97.plugin.PotionCraft.MoreInformation", "MoreInformation", "1.5.0")]
     public class MoreInformation : BaseUnityPlugin
     {
         public static string goldIcon = "<sprite=\"CommonAtlas\" name=\"Gold Icon\">";
 
-        private void Start()
+        private void Awake()
         {
             EnableSolventDirectionLine = Config.Bind<bool>("config", "EnableSolventDirectionLine", true);
             EnablePriceTooltips = Config.Bind<bool>("config", "EnableSolventDiEnablePriceTooltipsrectionLine", true);
