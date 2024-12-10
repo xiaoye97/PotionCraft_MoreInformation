@@ -1,29 +1,31 @@
-﻿using System;
+﻿using TMPro;
 using BepInEx;
 using HarmonyLib;
 using UnityEngine;
+using TooltipSystem;
 using BepInEx.Configuration;
 using PotionCraft.QuestSystem;
+using PotionCraft.ObjectBased;
 using PotionCraft.ManagersSystem;
+using System.Collections.Generic;
 using PotionCraft.ScriptableObjects;
 using PotionCraft.LocalizationSystem;
 using PotionCraft.ObjectBased.Mortar;
 using PotionCraft.ScriptableObjects.Salts;
-using PotionCraft.Npc.MonoBehaviourScripts;
 using PotionCraft.ScriptableObjects.Potion;
+using PotionCraft.Npc.MonoBehaviourScripts;
 using PotionCraft.DebugObjects.DebugWindows;
 using PotionCraft.ObjectBased.InteractiveItem;
 using PotionCraft.ScriptableObjects.Ingredient;
-using PotionCraft.ObjectBased.UIElements.Tooltip;
+using PotionCraft.ManagersSystem.Potion.Entities;
 using PotionCraft.ObjectBased.UIElements.Dialogue;
 using PotionCraft.ScriptableObjects.AlchemyMachineProducts;
 using PotionCraft.ObjectBased.RecipeMap.RecipeMapItem.IndicatorMapItem;
 using PotionCraft.ObjectBased.RecipeMap.RecipeMapItem.SolventDirectionHint;
-using TMPro;
 
 namespace xiaoye97
 {
-    [BepInPlugin("me.xiaoye97.plugin.PotionCraft.MoreInformation", "MoreInformation", "1.5.0")]
+    [BepInPlugin("me.xiaoye97.plugin.PotionCraft.MoreInformation", "MoreInformation", "2.0.0")]
     public class MoreInformation : BaseUnityPlugin
     {
         public static string goldIcon = "<sprite=\"CommonAtlas\" name=\"Gold Icon\">";
@@ -106,7 +108,7 @@ namespace xiaoye97
         public static void AddNormalPriceTooltip(TooltipContent tooltip, InventoryItem item, bool notHasTip = false)
         {
             tooltip.description2 += $"{LocalizationManager.GetText("#mod_moreinformation_value")}\t {GetPriceString(item)}";
-            int hasCount = Managers.Player.inventory.GetItemCount(item);
+            int hasCount = Managers.Player.Inventory.GetItemCount(item);
             if (hasCount > 0)
             {
                 tooltip.description2 += $"\n{LocalizationManager.GetText("#mod_moreinformation_has")} {hasCount}\t " + GetPriceString(item, hasCount);
@@ -142,11 +144,11 @@ namespace xiaoye97
             {
                 AddNormalPriceTooltip(__result, __instance);
                 float cost = 0;
-                foreach (var c in __instance.usedComponents)
+                foreach (var c in __instance.usedComponents.components)
                 {
-                    if (c.componentType == PotionUsedComponent.ComponentType.InventoryItem)
+                    if (c.Type == AlchemySubstanceComponentType.InventoryItem)
                     {
-                        cost += ((InventoryItem)c.componentObject).GetPrice() * c.amount;
+                        cost += ((InventoryItem)c.Component).GetPrice() * c.Amount;
                     }
                 }
                 __result.description2 += $"\n{LocalizationManager.GetText("#mod_moreinformation_cost")}\t {goldIcon} {cost.ToString("0.##")}";
@@ -206,7 +208,7 @@ namespace xiaoye97
                 string str = "";
                 foreach (var effect in currentQuest.desiredEffects)
                 {
-                    str += new Key("#effect_" + effect.name, null, false).GetText() + " ";
+                    str += new Key("#effect_" + effect.name).GetText() + " ";
                 }
                 str = __instance.dialogueText.text.text + $"<color=#a39278>{str}</color>";
                 __instance.dialogueText.text.text = str;
@@ -256,10 +258,18 @@ namespace xiaoye97
             if (GrindStatusDebugWindow == null)
             {
                 GrindStatusDebugWindow = Helper.CreateClearDebugWindow("研磨进度", new Vector2(4, -5));
-                var room = Managers.Room.instantiatedRooms[(int)PotionCraft.ManagersSystem.Room.RoomManager.RoomIndex.Laboratory];
-                GrindStatusDebugWindow.transform.SetParent(room.transform, false);
+                Dictionary<RoomIndex, Room> InstantiatedRooms = Traverse.Create(Managers.Room).Field("InstantiatedRooms").GetValue<Dictionary<RoomIndex, Room>>();
+                if (InstantiatedRooms != null)
+                {
+                    foreach (var kv in InstantiatedRooms)
+                    {
+                        Debug.Log($"房间 {kv.Key}");
+                    }
+                    var room = InstantiatedRooms[RoomIndex.Laboratory];
+                    GrindStatusDebugWindow.transform.SetParent(room.transform, false);
+                    GrindStatusDebugWindow.transform.localPosition = new Vector3(4, -5, 0);
+                }
             }
-            GrindStatusDebugWindow.transform.localPosition = new Vector3(4, -5, 0);
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(Mortar), "Update")]
@@ -268,14 +278,17 @@ namespace xiaoye97
             if (EnableGrindStatus.Value)
             {
                 InitGrindStatusDebugWindow();
-                if (__instance.containedStack != null)
+                if (GrindStatusDebugWindow != null)
                 {
-                    float status = Mathf.Clamp01(__instance.containedStack.overallGrindStatus);
-                    GrindStatusDebugWindow.ShowText($"{(status * 100).ToString("f2")}%");
-                }
-                else
-                {
-                    GrindStatusDebugWindow.ShowText("");
+                    if (__instance.containedStack != null)
+                    {
+                        float status = Mathf.Clamp01(__instance.containedStack.overallGrindStatus);
+                        GrindStatusDebugWindow.ShowText($"{(status * 100).ToString("f2")}%");
+                    }
+                    else
+                    {
+                        GrindStatusDebugWindow.ShowText("");
+                    }
                 }
             }
         }
