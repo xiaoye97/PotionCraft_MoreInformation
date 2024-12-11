@@ -1,31 +1,31 @@
-﻿using TMPro;
-using BepInEx;
-using HarmonyLib;
-using UnityEngine;
-using TooltipSystem;
+﻿using BepInEx;
 using BepInEx.Configuration;
-using PotionCraft.QuestSystem;
-using PotionCraft.ObjectBased;
-using PotionCraft.ManagersSystem;
-using System.Collections.Generic;
-using PotionCraft.ScriptableObjects;
-using PotionCraft.LocalizationSystem;
-using PotionCraft.ObjectBased.Mortar;
-using PotionCraft.ScriptableObjects.Salts;
-using PotionCraft.ScriptableObjects.Potion;
-using PotionCraft.Npc.MonoBehaviourScripts;
+using HarmonyLib;
 using PotionCraft.DebugObjects.DebugWindows;
-using PotionCraft.ObjectBased.InteractiveItem;
-using PotionCraft.ScriptableObjects.Ingredient;
+using PotionCraft.LocalizationSystem;
+using PotionCraft.ManagersSystem;
 using PotionCraft.ManagersSystem.Potion.Entities;
-using PotionCraft.ObjectBased.UIElements.Dialogue;
-using PotionCraft.ScriptableObjects.AlchemyMachineProducts;
+using PotionCraft.Npc.MonoBehaviourScripts;
+using PotionCraft.ObjectBased;
+using PotionCraft.ObjectBased.InteractiveItem;
+using PotionCraft.ObjectBased.Mortar;
 using PotionCraft.ObjectBased.RecipeMap.RecipeMapItem.IndicatorMapItem;
 using PotionCraft.ObjectBased.RecipeMap.RecipeMapItem.SolventDirectionHint;
+using PotionCraft.ObjectBased.UIElements.Dialogue;
+using PotionCraft.QuestSystem;
+using PotionCraft.ScriptableObjects;
+using PotionCraft.ScriptableObjects.AlchemyMachineProducts;
+using PotionCraft.ScriptableObjects.Ingredient;
+using PotionCraft.ScriptableObjects.Potion;
+using PotionCraft.ScriptableObjects.Salts;
+using System.Collections.Generic;
+using TMPro;
+using TooltipSystem;
+using UnityEngine;
 
 namespace xiaoye97
 {
-    [BepInPlugin("me.xiaoye97.plugin.PotionCraft.MoreInformation", "MoreInformation", "2.0.0")]
+    [BepInPlugin("me.xiaoye97.plugin.PotionCraft.MoreInformation", "MoreInformation", "2.0.1")]
     public class MoreInformation : BaseUnityPlugin
     {
         public static string goldIcon = "<sprite=\"CommonAtlas\" name=\"Gold Icon\">";
@@ -252,6 +252,8 @@ namespace xiaoye97
         #region 研磨进度
 
         public static DebugWindow GrindStatusDebugWindow;
+        private static float initGrindStatusDebugWindowCD;
+        private static bool startInitGrindStatusDebugWindow;
 
         private static void InitGrindStatusDebugWindow()
         {
@@ -277,17 +279,40 @@ namespace xiaoye97
         {
             if (EnableGrindStatus.Value)
             {
-                InitGrindStatusDebugWindow();
                 if (GrindStatusDebugWindow != null)
                 {
                     if (__instance.containedStack != null)
                     {
-                        float status = Mathf.Clamp01(__instance.containedStack.overallGrindStatus);
-                        GrindStatusDebugWindow.ShowText($"{(status * 100).ToString("f2")}%");
+                        if (Managers.Room != null && Managers.Room.CurrentRoomIndex == RoomIndex.Laboratory)
+                        {
+                            float status = Mathf.Clamp01(__instance.containedStack.overallGrindStatus);
+                            GrindStatusDebugWindow.ShowText($"{(status * 100).ToString("f2")}%");
+                        }
+                        else
+                        {
+                            GrindStatusDebugWindow.ShowText("");
+                        }
                     }
                     else
                     {
                         GrindStatusDebugWindow.ShowText("");
+                    }
+                }
+                else
+                {
+                    if (startInitGrindStatusDebugWindow)
+                    {
+                        initGrindStatusDebugWindowCD -= Time.deltaTime;
+                        if (initGrindStatusDebugWindowCD <= 0)
+                        {
+                            startInitGrindStatusDebugWindow = false;
+                            InitGrindStatusDebugWindow();
+                        }
+                    }
+                    else
+                    {
+                        startInitGrindStatusDebugWindow = true;
+                        initGrindStatusDebugWindowCD = 2;
                     }
                 }
             }
