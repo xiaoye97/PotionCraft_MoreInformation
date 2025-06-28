@@ -1,4 +1,5 @@
-﻿using BepInEx;
+﻿using System;
+using BepInEx;
 using BepInEx.Configuration;
 using HarmonyLib;
 using PotionCraft.DebugObjects.DebugWindows;
@@ -22,6 +23,7 @@ using System.Collections.Generic;
 using TMPro;
 using TooltipSystem;
 using UnityEngine;
+using PotionCraft.InventorySystem;
 
 namespace xiaoye97
 {
@@ -182,7 +184,8 @@ namespace xiaoye97
         /// <summary>
         /// 传说物质信息
         /// </summary>
-        [HarmonyPostfix, HarmonyPatch(typeof(LegendarySubstance), "GetTooltipContent")]
+        [HarmonyPostfix, HarmonyPatch(typeof(LegendarySubstance), "GetTooltipContent", 
+            new Type[] { typeof(int), typeof(IAlchemySubstanceComponents), typeof(ItemsPanel), typeof(bool) })]
         public static void LegendarySubstance_GetTooltipContent_Patch(LegendarySubstance __instance, ref TooltipContent __result)
         {
             if (EnablePriceTooltips.Value)
