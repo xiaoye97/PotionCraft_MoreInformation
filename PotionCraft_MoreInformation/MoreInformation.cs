@@ -27,7 +27,7 @@ using PotionCraft.InventorySystem;
 
 namespace xiaoye97
 {
-    [BepInPlugin("me.xiaoye97.plugin.PotionCraft.MoreInformation", "MoreInformation", "2.0.1")]
+    [BepInPlugin("me.xiaoye97.plugin.PotionCraft.MoreInformation", "MoreInformation", "2.0.2")]
     public class MoreInformation : BaseUnityPlugin
     {
         public static string goldIcon = "<sprite=\"CommonAtlas\" name=\"Gold Icon\">";
