@@ -18,7 +18,7 @@ Add tooltip, npc potion tips, potion line, grind status.
 
 # 药剂工艺 更多信息
 
-此Mod适配药剂工艺v2.0版本！
+此Mod适配药剂工艺v2.0.2版本！
 
 功能: 添加提示条，npc药水提示，药水线，研磨进度等信息。
 
