@@ -1,6 +1,6 @@
 # PotionCraft_MoreInformation
 
-This mod is Compatible with Potion Craft v2.0!
+This mod is Compatible with Potion Craft v2.0.2!
 
 Add tooltip, npc potion tips, potion line, grind status.
 
